@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Magizh Café — Scan & Win</title>
+<style>
+:root{--green:#0b6b3a;--deep:#072b18;--gold:#dba800;--muted:#e9f3eb}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{margin:0;background:linear-gradient(180deg,var(--deep),var(--green));color:#fff;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+header{text-align:center;padding:16px}
+.logo{height:70px}
+.card{background:rgba(255,255,255,.06);border-radius:14px;padding:16px;margin:12px;width:90%;max-width:400px;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+h1{text-align:center;color:var(--gold)}
+input{width:100%;padding:12px;border-radius:8px;border:none;margin:6px 0;font-size:16px}
+button{background:var(--gold);color:#052b16;border:0;padding:12px 16px;border-radius:10px;font-weight:700;cursor:pointer;width:100%;font-size:16px}
+button:active{transform:scale(0.98)}
+.hidden{display:none}
+#fx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#brand{font-weight:900;font-size:28px;letter-spacing:6px;background:linear-gradient(90deg,rgba(255,255,255,.2),rgba(255,255,255,.8),rgba(255,255,255,.2));-webkit-background-clip:text;color:transparent;animation:shine 3s linear infinite}
+@keyframes shine{0%{background-position:-200px}100%{background-position:200px}}
+footer{margin:12px;font-size:13px;opacity:.8}
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="Magizh Café" class="logo" />
+</header>
+
+<section id="entry" class="card">
+  <h1>Scan & Win</h1>
+  <p>Enter your details to reveal today’s offer.</p>
+  <input id="name" placeholder="Your name" />
+  <input id="bill" placeholder="Bill number" inputmode="numeric" />
+  <button id="playBtn">Check my offer</button>
+  <p id="msg"></p>
+</section>
+
+<section id="result" class="card hidden">
+  <div id="brand">Magizh Café</div>
+  <h2 id="offerText"></h2>
+  <p id="subText"></p>
+  <canvas id="fx"></canvas>
+  <button id="shareBtn">Share on WhatsApp</button>
+</section>
+
+<footer>© 2025 Magizh Café | மகிழ்வித்து மகிழ் 🌿</footer>
+
+<script>
+const WHATSAPP_NUMBER = "+919790151709";
+const OFFERS = [0,5,0,10,5,0,15,5,0,20,5,10,5,0,25,5,10,5,0,30,5,10,5,0,35,5,10,5,20,0,40,5,10,5,0,45,5,10,5,0];
+const STORAGE_KEY = "magizh_used_bills";
+const BILL_MIN = 16859;
+const BILL_MAX = 18000;
+
+const nameIn = document.getElementById("name");
+const billIn = document.getElementById("bill");
+const playBtn = document.getElementById("playBtn");
+const entry = document.getElementById("entry");
+const result = document.getElementById("result");
+const msg = document.getElementById("msg");
+const offerText = document.getElementById("offerText");
+const subText = document.getElementById("subText");
+const shareBtn = document.getElementById("shareBtn");
+const fx = document.getElementById("fx");
+const ctx = fx.getContext("2d");
+
+function sizeFx(){fx.width=fx.clientWidth;fx.height=fx.clientHeight;}
+window.addEventListener("resize",sizeFx);sizeFx();
+
+function isBillUsed(b){const u=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");return u.includes(b);}
+function markBillUsed(b){const u=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");u.push(b);localStorage.setItem(STORAGE_KEY,JSON.stringify(u));}
+
+let parts=[];
+function burst(x,y,n=80){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.28,s=2+Math.random()*4;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:60+Math.random()*40,
+      c:["#ffd54f","#ffb300","#ffe082","#fff8e1"][Math.floor(Math.random()*4)]});
+  }
+}
+function anim(){
+  ctx.clearRect(0,0,fx.width,fx.height);
+  for(let p of parts){
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;
+    ctx.globalAlpha=Math.max(0,p.life/80);
+    ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,6.28);ctx.fill();
+  }
+  parts=parts.filter(p=>p.life>0);
+  if(parts.length)requestAnimationFrame(anim);
+}
+
+playBtn.onclick=()=>{
+  msg.textContent="";
+  const n=nameIn.value.trim();
+  const b=billIn.value.trim();
+
+  if(!n||!b){msg.textContent="Please enter name and bill number.";return;}
+
+  if(isNaN(b)){msg.textContent="Please enter numbers only!";return;}
+  const billNum=parseInt(b);
+  if(billNum<BILL_MIN || billNum>BILL_MAX){
+    msg.textContent=`⚠️ Invalid bill number! (Use between ${BILL_MIN} - ${BILL_MAX})`;
+    return;
+  }
+
+  if(isBillUsed(billNum)){
+    msg.textContent="This bill number has already been used!";
+    return;
+  }
+
+  markBillUsed(billNum);
+  const offer = OFFERS[Math.floor(Math.random()*OFFERS.length)];
+  showResult(n,billNum,offer);
+};
+
+function showResult(n,b,o){
+  entry.classList.add("hidden");
+  result.classList.remove("hidden");
+
+  offerText.textContent = o===0 ? "You won 0% (Better luck next time!)" : `🎉 You won ${o}% OFF!`;
+  subText.textContent = o===0 ? "Try again next time." : "Show this at billing counter to claim your discount.";
+  
+  burst(fx.width/2,fx.height/3,o>0?150:50); anim();
+
+  shareBtn.onclick=()=>{
+    const msgText = encodeURIComponent(
+`*Magizh Café – Scan & Win!*
+Name: *${n}*
+Bill No: *${b}*
+You Won: *${o}% OFF!* 🎉
+👉 Order now: https://magizh-menu.netlify.app/menu_offer.html?offer=${o}
+`
+    );
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msgText}`,"_blank");
+  };
+}
+</script>
+</body>
+</html>
