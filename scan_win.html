@@ -102,7 +102,7 @@ playBtn.onclick=()=>{
   if(isNaN(b)){msg.textContent="Please enter numbers only!";return;}
   const billNum=parseInt(b);
   if(billNum<BILL_MIN || billNum>BILL_MAX){
-    msg.textContent=`⚠️ Invalid bill number! (Use between ${BILL_MIN} - ${BILL_MAX})`;
+    msg.textContent=`⚠️ Invalid bill number!`;
     return;
   }
 
